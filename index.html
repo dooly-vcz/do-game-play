@@ -11172,11 +11172,20 @@ const CATS = [
   { id: "cloth", label: "옷", n: 3 },
   { id: "shoes", label: "신발", n: 3 },
 ];
-// 꾸미기 화면(6-2) 인형 좌표 → 다른 인형 좌표 변환 (머리 크기·위치 기준)
+// 꾸미기 화면(6-2) 인형 좌표 → 각 장면 위치로 옮기는 값 (몸은 모든 장면에서 꾸미기 화면 몸 하나로 통일)
 const FIT = {
-  room: { s: 0.49, tx: 569, ty: 637, cloth: { dx: 0, dy: -18, sy: 0.93 }, shoes: { dx: 0, dy: -62, sy: 0.9 } },
-  bed:  { s: 0.575, tx: 572, ty: 275, cloth: { dx: 24, dy: -10, sy: 0.95, rot: -3 } },
+  room: { s: 0.49, tx: 569, ty: 637 },
+  bed:  { s: 0.575, tx: 572, ty: 275 },
 };
+// 꾸미기 화면의 몸 + 머리/옷/신발을 한 묶음으로 그려 크기·위치만 옮김 → 옷이 몸에 딱 맞음
+function wholeDoll(sel, fit, opts = {}) {
+  const g = document.createElement("div"); g.className = "wholedoll";
+  g.style.cssText = `position:absolute;left:0;top:0;width:${SW}px;height:${SH}px;transform-origin:0 0;pointer-events:none;transform:translate(${fit.tx}px,${fit.ty}px) scale(${fit.s});`;
+  spr("dl_body", { parent: g });
+  partsLayer(sel, { parent: g, skip: opts.skip });
+  (opts.parent || cur).appendChild(g);
+  return g;
+}
 const josa = (w, a, b) => { const c = w.charCodeAt(w.length - 1) - 0xac00; return w + (c >= 0 && c % 28 ? a : b); };
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 function homeBtn(to = "title") { const b = ui("🏠", "homebtn"); b.onclick = (e) => { e.stopPropagation(); sfx.pop(); go(to); }; }
@@ -11293,10 +11302,9 @@ SCREENS.room = () => {
   const F = FIT.room;
   const holder = document.createElement("div"); holder.className = "dollhold"; holder.style.cssText = "position:absolute;inset:0;transform-origin:1187px 1290px;";
   cur.appendChild(holder);
-  spr("dl_room_doll", { parent: holder });
-  partsLayer(doll, Object.assign({ parent: holder }, F));
+  wholeDoll(doll, F, { parent: holder });
   holder.classList.add("bob2");
-  if (doll.name) ui(esc(doll.name), "nametag").style.cssText += "left:1187px;top:520px;";
+  if (doll.name) ui(esc(doll.name), "nametag").style.cssText += "left:1187px;top:600px;";
   hit({ x: 930, y: 560, w: 520, h: 760 }).onclick = () => { sfx.pop(); holder.classList.remove("bob2"); reanim(holder, "hop"); timers.push(setTimeout(() => holder.classList.add("bob2"), 500)); };
   btn("👗 옷 갈아입기", "sm alt", () => go("dress")).style.cssText += "left:60px;bottom:60px;";
   btn("🚪 이동", "", () => {
@@ -11321,19 +11329,18 @@ SCREENS.bedroom = () => {
   // 인형 (침대 위)
   const holder = document.createElement("div"); holder.style.cssText = "position:absolute;inset:0;z-index:3;transform-origin:1305px 1030px;";
   cur.appendChild(holder);
-  spr("dl_bed_doll", { parent: holder });
-  partsLayer(doll, Object.assign({ parent: holder, skip: ["shoes"] }, F));
-  // 자는 얼굴 (감은 눈 + 작은 입)
-  const SK = "rgb(255,239,203)";
+  const dg = wholeDoll(doll, F, { parent: holder, skip: ["shoes"] });
+  // 자는 얼굴 (감은 눈 + 작은 입) — 꾸미기 화면 몸 좌표로 그려서 같이 옮겨짐
+  const SK = "rgb(255,233,207)";
   const face = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   face.setAttribute("width", SW); face.setAttribute("height", SH); face.setAttribute("class", "sleepface");
   face.innerHTML = `
-    <ellipse cx="1220.6" cy="591.3" rx="20" ry="23" fill="${SK}"/><ellipse cx="1346.6" cy="583.8" rx="20" ry="23" fill="${SK}"/>
-    <ellipse cx="1280" cy="604" rx="13" ry="8" fill="${SK}"/>
-    <path d="M1203 588 Q1220.6 602 1238 588" stroke="#1d1d1d" stroke-width="5" fill="none" stroke-linecap="round"/>
-    <path d="M1329 580 Q1346.6 594 1364 580" stroke="#1d1d1d" stroke-width="5" fill="none" stroke-linecap="round"/>
-    <path d="M1276 605 Q1280 608 1284 605" stroke="#1d1d1d" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
-  holder.appendChild(face);
+    <ellipse cx="1094.8" cy="518" rx="32" ry="38" fill="${SK}"/><ellipse cx="1322" cy="524.4" rx="32" ry="38" fill="${SK}"/>
+    <ellipse cx="1201" cy="552" rx="31" ry="16" fill="${SK}"/>
+    <path d="M1064 514 Q1095 546 1126 514" stroke="#1d1d1d" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M1291 520 Q1322 552 1353 520" stroke="#1d1d1d" stroke-width="10" fill="none" stroke-linecap="round"/>
+    <path d="M1192 555 Q1200 561 1208 555" stroke="#1d1d1d" stroke-width="4.5" fill="none" stroke-linecap="round"/>`;
+  dg.appendChild(face);
   // 토끼 인형
   const bunny = spr("dl_bunny", { z: 5 });
   const bHome = { x: M.dl_bunny.x, y: M.dl_bunny.y };
