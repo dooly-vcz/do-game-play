@@ -1,5 +1,5 @@
 // 도게임 오프라인 캐시 — 빌드마다 버전이 바뀌어 자동 갱신됨
-const CACHE = "dogame-f780ae248f";
+const CACHE = "dogame-ac84ac2dcc";
 const FILES = ["./", "./index.html", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/icon-512.png", "./icons/apple-touch-icon.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => { e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())); });
